@@ -6,18 +6,15 @@ _addon.commands = {'hn', 'helpna'}
 require('tables')
 require('strings')
 
-local last_position = nil
-local last_cast_time = 0
-local last_move_time = 0
-Trueaction = 0
-
-local ADDON_COOLDOWN = 5 -- seconds
-local CAST_COOLDOWN = 4  -- seconds
-local MOVE_COOLDOWN = 1  -- seconds
 
 
 
--- Default actions
+--SETTINGS
+	local ADDON_COOLDOWN = 5 -- seconds
+	local CAST_COOLDOWN = 4  -- seconds
+	local MOVE_COOLDOWN = 1  -- seconds
+
+-- Default actions  (example: keyword = 'Spell Name')
 local actions = {
     para    = 'Paralyna',
     pois    = 'Poisona',
@@ -54,47 +51,40 @@ local actions = {
     aurora  = "Aurorastorm II",
 }
 
--- Queue system variables
-local castQueue = {}   -- FIFO queue for cast requests
-local busyUntil = 0    -- time (os.clock) until which we consider the player "busy"
 
--- Enqueue a cast request and notify in chat
+--Other Variables
+	local castQueue = {}   
+	local busyUntil = 0    
+	local last_position = nil
+	local last_cast_time = 0
+	local last_move_time = 0
+	Trueaction = 0 --global
+
+
 local function enqueue_cast(target, spell)
     table.insert(castQueue, {target = target, spell = spell, time = os.clock()})
     windower.add_to_chat(207, string.format('Queued cast: %s -> %s', spell, target))
 end
 
--- Process the cast queue: if not busy and an item is waiting, cast it.
 windower.register_event('prerender', function()
     local now = os.clock()
 	
-	-- if is_player_moving() then
-	-- print("Moving")
-	-- else
-	-- print("still")
-	-- end
-	
-	if is_player_moving() then return end
-	
-	if is_casting() then return end
+	-- Reasons to do nothing:
+	if is_player_moving() then return end 	--Moving
+	if is_casting() then return end			--Performing other actions
+    if now < busyUntil then return end		-- Addon cooldown
+    if #castQueue == 0 then return end 		-- Nothing in queue
 
-
-    if now < busyUntil then
-        return  -- still waiting until the last cast is finished (or presumed finished)
-    end
-    if #castQueue == 0 then
-        return  -- nothing to do
-    end
-
+	-- Cast next spell from the queue, and take it off the stack.
     local req = table.remove(castQueue, 1)
     windower.send_command(string.format('input /ma "%s" %s', req.spell, req.target))
     busyUntil = now + ADDON_COOLDOWN
 end)
 
--- Listen for party chat (mode 13)
 windower.register_event('incoming text', function(original, modified, mode, is_self)
-    if mode == 13 then
-        local sender, message = original:match("^(%b())%s*(.+)$")
+    
+	if mode == 13 then --13 = Party Chat
+        local sender, message = original:match("^(%b())%s*(.+)$") --Expecting FFXI default party chat format, saves sender's name. May not work if format is not vanilla
         if sender then
             sender = sender:sub(4, -4)
         end
@@ -120,7 +110,7 @@ windower.register_event('incoming text', function(original, modified, mode, is_s
                 end
             end
         end
-
+		-- Put the request in the queue
         if sender and message then
             for keyword, spell in pairs(actions) do
                 if message:lower():contains(keyword) then
@@ -132,7 +122,7 @@ windower.register_event('incoming text', function(original, modified, mode, is_s
     end
 end)
 
--- Allow adding/removing keywords via addon command.
+-- Allow user to add/remove keywords via command
 windower.register_event('addon command', function(cmd, keyword, spell)
     if cmd:lower() == 'add' and keyword and spell then
         actions[keyword:lower()] = spell
@@ -145,10 +135,6 @@ windower.register_event('addon command', function(cmd, keyword, spell)
     end
 end)
 
-
-
-
-
 function get_player_status()  -- 0 idle, 1 engage, 33 rest, -1 no player/zone, 
     local player = windower.ffxi.get_mob_by_target('me')
     if not player then
@@ -158,8 +144,6 @@ function get_player_status()  -- 0 idle, 1 engage, 33 rest, -1 no player/zone,
 	if player.status then return player.status else return -1 end
 
 end
-
-
 
 function is_player_moving()
 
@@ -188,8 +172,6 @@ function is_player_moving()
     last_position = current_position
     return moving
 end
-
-
 
 windower.register_event('action', function(action)
     local player = windower.ffxi.get_player()
