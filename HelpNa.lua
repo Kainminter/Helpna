@@ -1,6 +1,6 @@
 _addon.name    = 'Hungry'
 _addon.author  = 'Kainminter'
-_addon.version = '1.0'
+_addon.version = '1.3'
 _addon.command = 'hungry'
 
 
@@ -17,6 +17,8 @@ local settings = {
     letter_alpha      = 100 ,
 	letter_font			= 'Verdana',
 	letter_bold			= true,
+	pos_x_offset		= 0,
+	pos_y_offset		= -500,
     amplitude           = 20,         -- Maximum vertical offset (in pixels) for the sine wave.
     frequency           = 2,          -- How fast the wave oscillates (radians per second).
     phase_offset        = 0.5,        -- Phase difference between each successive letter.
@@ -88,7 +90,7 @@ local function update_texts()
 
     for _, letter in ipairs(letters) do
         local offset_y = settings.amplitude * math.sin(current_time * settings.frequency + letter.index * settings.phase_offset)
-        letter.text_obj:pos(letter.base_x, screen_center_y + offset_y - 100)
+        letter.text_obj:pos(letter.base_x + settings.pos_x_offset, screen_center_y + offset_y + settings.pos_y_offset)
         letter.text_obj:alpha(alpha_value)  -- Apply the fade effect
     end
 end
@@ -155,9 +157,36 @@ windower.register_event('addon command', function(cmd, ...)
         else
             log('Usage: //hungry sound [on|off]')
         end
+
+    elseif cmd == 'pos' then
+reset_text_objects()
+        if args[1] == 'x' and tonumber(args[2]) then
+            settings.pos_x_offset = tonumber(args[2])
+            log('Hungry: X position offset set to ' .. settings.pos_x_offset)
+            init_text_objects() -- Reinitialize text objects
+        elseif args[1] == 'y' and tonumber(args[2]) then
+            settings.pos_y_offset = tonumber(args[2])
+            log('Hungry: Y position offset set to ' .. settings.pos_y_offset)
+            init_text_objects()
+        else
+            log('Usage: //hungry pos [x|y] <value>')
+        end
+
+
+    elseif cmd == 'size' and tonumber(args[1]) then
+reset_text_objects()
+        local new_size = tonumber(args[1])
+        settings.letter_size = new_size
+        settings.letter_spacing = new_size
+        log('Hungry: Letter size & spacing set to ' .. new_size)
+        init_text_objects() -- Reinitialize with new size & spacing
+
+	
     else
-        log('Usage: //hungry text [on|off] | sound [on|off]')
-    end
+        log('Usage:')
+        log('//hungry text [on|off] | sound [on|off]')
+        log('//hungry pos [x|y] <value>  (Move text)')
+        log('//hungry size <value>  (Change letter size & spacing)')    end
 end)
 
 
@@ -169,3 +198,14 @@ windower.register_event('unload', function()
         letter.text_obj:destroy()
     end
 end)
+
+function reset_text_objects()
+    -- Destroy all existing text objects
+    for _, letter in ipairs(letters) do
+        if letter.text_obj then
+            letter.text_obj:destroy()
+        end
+    end
+    letters = {} -- Clear table
+    init_text_objects() -- Reinitialize text objects
+end
