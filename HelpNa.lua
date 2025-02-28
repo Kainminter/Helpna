@@ -130,7 +130,7 @@ updateHUD()
     -- Check for conditions for Divine Waltz (when spell is Sleep).
     if (req.spell == "Cure" or req.spell == "Curaga") and ((main_job == "DNC" and main_level >= 20) or (sub_job == "DNC" and sub_level >= 20)) then --and tp >= 400 then
         --windower.send_command('input /ja "Divine Waltz" <me>')
-		windower.send_command('input /ja "Divine Waltz" <me>; wait 0.1; input /ja "Curing Waltz" '.. req.target )
+		windower.send_command('input /ja "Divine Waltz" <me>; wait 3; input /ja "Curing Waltz" '.. req.target )
     -- Check for Healing Waltz conditions.
     elseif healingWaltzSpells[req.spell] and ((main_job == "DNC" and main_level >= 35) or (sub_job == "DNC" and sub_level >= 35)) then -- and tp >= 200 then
         windower.send_command(string.format('input /ja "Healing Waltz" %s', req.target))
