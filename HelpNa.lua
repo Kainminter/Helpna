@@ -1,5 +1,5 @@
 _addon.name = 'HelpNa'
-_addon.version = '2.0'
+_addon.version = '2.5'
 _addon.author = 'Kainminter'
 _addon.commands = {'hn', 'helpna'}
 
@@ -247,7 +247,7 @@ windower.register_event('action', function(action)
 
     if action.actor_id == player.id then
 		Trueaction = action.category
-         if Trueaction ~= 0 and Trueaction ~= 8 then
+         if Trueaction ~= 0 and Trueaction ~= 8 and Trueaction ~= 1 then
              last_cast_time = os.clock()
 			 Trueaction = 0
          end
@@ -256,7 +256,7 @@ end)
 
 function is_casting()
     local current_time = os.clock()
-    if Trueaction ~= 0 then return true end
+    if Trueaction ~= 0 and Trueaction ~= 1 then return true end
 	return (current_time - last_cast_time) < CAST_COOLDOWN
 end
 
